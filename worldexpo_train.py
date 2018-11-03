@@ -3,13 +3,13 @@ import torch
 import numpy as np
 import sys
 
-from src.crowd_count import CrowdCounter
-from src import network
-from src.exr_data_loader import ExrImageDataLoader
-from src.timer import Timer
-from src import utils
-from src.evaluate_model import evaluate_model
-
+from mcnn.crowd_count import CrowdCounter
+from mcnn import network
+from mcnn.exr_data_loader import ExrImageDataLoader
+from mcnn.timer import Timer
+from mcnn import utils
+from mcnn.evaluate_model import evaluate_model
+import argparse
 try:
     from termcolor import cprint
 except ImportError:
@@ -28,124 +28,132 @@ def log_print(text, color=None, on_color=None, attrs=None):
     print(text)
 
 
+def main():
+    parser = argparse.ArgumentParser(description='mcnn worldexp.')
+    parser.add_argument('--preload', type=int, default=1)
+    parser.add_argument('--data', type=str, default="/mnt/m2/mzcc/crowd_data/worldexpo", help='train, test, etc')
+    args = parser.parse_args()
+    method = 'mcnn'
+    dataset_name = 'worldexpo'
+    output_dir = './saved_models/'
 
-method = 'mcnn'
-dataset_name = 'worldexpo'
-output_dir = './saved_models/'
+    data_path = args.data
+    train_path = data_path+'/train_frame'
+    train_gt_path = data_path+'/train_dmap'
+    val_path = data_path+'/test_frame'
+    val_gt_path = data_path+'/test_dmap'
 
-data_path = "/mnt/m2/mzcc/crowd_data/worldexpo"
-train_path = data_path+'/train_frame'
-train_gt_path = data_path+'/train_dmap'
-val_path = data_path+'/test_frame'
-val_gt_path = data_path+'/test_dmap'
-
-#training configuration
-start_step = 0
-end_step = 2000
-lr = 0.00001
-momentum = 0.9
-disp_interval = 500
-log_interval = 250
-
-
-#Tensorboard  config
-use_tensorboard = False
-save_exp_name = method + '_' + dataset_name + '_' + 'v1'
-remove_all_log = False   # remove all historical experiments in TensorBoard
-exp_name = None # the previous experiment name in TensorBoard
-
-# ------------
-rand_seed = 64678  
-if rand_seed is not None:
-    np.random.seed(rand_seed)
-    torch.manual_seed(rand_seed)
-    torch.cuda.manual_seed(rand_seed)
+    #training configuration
+    start_step = 0
+    end_step = 3000
+    lr = 0.00001
+    momentum = 0.5
+    disp_interval = 500
+    log_interval = 250
 
 
-# load net
-net = CrowdCounter()
-network.weights_normal_init(net, dev=0.01)
-net.cuda()
-net.train()
+    #Tensorboard  config
+    use_tensorboard = False
+    save_exp_name = method + '_' + dataset_name + '_' + 'v1'
+    remove_all_log = False   # remove all historical experiments in TensorBoard
+    exp_name = None # the previous experiment name in TensorBoard
 
-params = list(net.parameters())
-optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=lr)
+    # ------------
+    rand_seed = 64678
+    if rand_seed is not None:
+        np.random.seed(rand_seed)
+        torch.manual_seed(rand_seed)
+        torch.cuda.manual_seed(rand_seed)
 
-if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
 
-# tensorboad
-use_tensorboard = use_tensorboard and CrayonClient is not None
-if use_tensorboard:
-    cc = CrayonClient(hostname='127.0.0.1')
-    if remove_all_log:
-        cc.remove_all_experiments()
-    if exp_name is None:    
-        exp_name = save_exp_name 
-        exp = cc.create_experiment(exp_name)
-    else:
-        exp = cc.open_experiment(exp_name)
+    # load net
+    net = CrowdCounter()
+    network.weights_normal_init(net, dev=0.01)
+    # network.weights_xavier_init(net, gain=0.01)
+    net.cuda()
+    net.train()
 
-# training
-train_loss = 0
-step_cnt = 0
-re_cnt = False
-t = Timer()
-t.tic()
+    params = list(net.parameters())
+    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=lr)
 
-data_loader = ExrImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=False)
-data_loader_val = ExrImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=False)
-best_mae = 10000000
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
-for epoch in range(start_step, end_step+1):    
-    step = -1
+    # tensorboad
+    use_tensorboard = use_tensorboard and CrayonClient is not None
+    if use_tensorboard:
+        cc = CrayonClient(hostname='127.0.0.1')
+        if remove_all_log:
+            cc.remove_all_experiments()
+        if exp_name is None:
+            exp_name = save_exp_name
+            exp = cc.create_experiment(exp_name)
+        else:
+            exp = cc.open_experiment(exp_name)
+
+    # training
     train_loss = 0
-    for blob in data_loader:                
-        step = step + 1        
-        im_data = blob['data']
-        gt_data = blob['gt_density']
-        density_map = net(im_data, gt_data)
-        loss = net.loss
-        train_loss += loss.data[0]
-        step_cnt += 1
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        if step % disp_interval == 0:            
-            duration = t.toc(average=False)
-            fps = step_cnt / duration
-            gt_count = np.sum(gt_data)    
-            density_map = density_map.data.cpu().numpy()
-            et_count = np.sum(density_map)
-            utils.save_results(im_data,gt_data,density_map, output_dir)
-            log_text = 'epoch: %4d, step %4d, Time: %.4fs, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch,
-                step, 1./fps, gt_count,et_count)
-            log_print(log_text, color='green', attrs=['bold'])
-            re_cnt = True    
-    
-       
-        if re_cnt:                                
-            t.tic()
-            re_cnt = False
+    step_cnt = 0
+    re_cnt = False
+    t = Timer()
+    t.tic()
 
-    if (epoch % 2 == 0):
-        save_name = os.path.join(output_dir, '{}_{}_{}.h5'.format(method,dataset_name,epoch))
-        network.save_net(save_name, net)     
-        #calculate error on the validation dataset 
-        mae,mse = evaluate_model(save_name, data_loader_val)
-        if mae < best_mae:
-            best_mae = mae
-            best_mse = mse
-            best_model = '{}_{}_{}.h5'.format(method,dataset_name,epoch)
-        log_text = 'EPOCH: %d, MAE: %.1f, MSE: %0.1f' % (epoch,mae,mse)
-        log_print(log_text, color='green', attrs=['bold'])
-        log_text = 'BEST MAE: %0.1f, BEST MSE: %0.1f, BEST MODEL: %s' % (best_mae,best_mse, best_model)
-        log_print(log_text, color='green', attrs=['bold'])
-        if use_tensorboard:
-            exp.add_scalar_value('MAE', mae, step=epoch)
-            exp.add_scalar_value('MSE', mse, step=epoch)
-            exp.add_scalar_value('train_loss', train_loss/data_loader.get_num_samples(), step=epoch)
-        
+    data_loader = ExrImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=args.preload)
+    data_loader_val = ExrImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=False)
+    best_mae = 10000000
+
+    for epoch in range(start_step, end_step+1):
+        step = -1
+        train_loss = 0
+        for blob in data_loader:
+            step = step + 1
+            im_data = blob['data']
+            gt_data = blob['gt_density']
+            density_map = net(im_data, gt_data)
+            loss = net.loss
+            train_loss += loss.item()#.data[0]
+            step_cnt += 1
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if step % disp_interval == 0:
+                print("current loss: {}".format(loss.item()))
+                duration = t.toc(average=False)
+                fps = step_cnt / duration
+                gt_count = np.sum(gt_data)
+                density_map = density_map.data.cpu().numpy()
+                et_count = np.sum(density_map)
+                utils.save_results(im_data,gt_data,density_map, output_dir)
+                log_text = 'epoch: %4d, step %4d, Time: %.4fs, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch,
+                    step, 1./fps, gt_count,et_count)
+                log_print(log_text, color='green', attrs=['bold'])
+                re_cnt = True
+
+
+            if re_cnt:
+                t.tic()
+                re_cnt = False
+
+        if (epoch % 2 == 0):
+            save_name = os.path.join(output_dir, '{}_{}_{}.h5'.format(method,dataset_name,epoch))
+            network.save_net(save_name, net)
+            #calculate error on the validation dataset
+            mae,mse = evaluate_model(save_name, data_loader_val)
+            if mae < best_mae:
+                best_mae = mae
+                best_mse = mse
+                best_model = '{}_{}_{}.h5'.format(method,dataset_name,epoch)
+            log_text = 'EPOCH: %d, MAE: %.1f, MSE: %0.1f' % (epoch,mae,mse)
+            log_print(log_text, color='green', attrs=['bold'])
+            log_text = 'BEST MAE: %0.1f, BEST MSE: %0.1f, BEST MODEL: %s' % (best_mae,best_mse, best_model)
+            log_print(log_text, color='green', attrs=['bold'])
+            if use_tensorboard:
+                exp.add_scalar_value('MAE', mae, step=epoch)
+                exp.add_scalar_value('MSE', mse, step=epoch)
+                exp.add_scalar_value('train_loss', train_loss/data_loader.get_num_samples(), step=epoch)
+
+if __name__ == "__main__":
+    main()
     
 
