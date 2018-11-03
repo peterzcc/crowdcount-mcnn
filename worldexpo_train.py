@@ -5,7 +5,7 @@ import sys
 
 from src.crowd_count import CrowdCounter
 from src import network
-from src.data_loader import ImageDataLoader
+from src.exr_data_loader import ExrImageDataLoader
 from src.timer import Timer
 from src import utils
 from src.evaluate_model import evaluate_model
@@ -22,21 +22,22 @@ except ImportError:
 
 
 def log_print(text, color=None, on_color=None, attrs=None):
-    if cprint is not None:
-        cprint(text, color=color, on_color=on_color, attrs=attrs)
-    else:
-        print(text)
+    # if cprint is not None:
+    #     cprint(text, color=color, on_color=on_color, attrs=attrs)
+    # else:
+    print(text)
 
 
 
 method = 'mcnn'
-dataset_name = 'shtechA'
+dataset_name = 'worldexpo'
 output_dir = './saved_models/'
 
-train_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train'
-train_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train_den'
-val_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val'
-val_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val_den'
+data_path = "/mnt/m2/mzcc/crowd_data/worldexpo"
+train_path = data_path+'/train_frame'
+train_gt_path = data_path+'/train_dmap'
+val_path = data_path+'/test_frame'
+val_gt_path = data_path+'/test_dmap'
 
 #training configuration
 start_step = 0
@@ -92,9 +93,9 @@ re_cnt = False
 t = Timer()
 t.tic()
 
-data_loader = ImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=False)
-data_loader_val = ImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=False)
-best_mae = 1000000
+data_loader = ExrImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=False)
+data_loader_val = ExrImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=False)
+best_mae = 10000000
 
 for epoch in range(start_step, end_step+1):    
     step = -1

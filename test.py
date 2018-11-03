@@ -13,9 +13,13 @@ torch.backends.cudnn.benchmark = False
 vis = False
 save_output = True
 
-data_path =  './data/original/shanghaitech/part_B_final/test_data/images/'
-gt_path = './data/original/shanghaitech/part_B_final/test_data/ground_truth_csv/'
-model_path = './final_models/mcnn_shtechB_110.h5'
+# data_path = './data/original/shanghaitech/part_B_final/test_data/images/'
+# gt_path = './data/original/shanghaitech/part_B_final/test_data/ground_truth_csv/'
+# model_path = './final_models/mcnn_shtechB_110.h5'
+
+data_path = './data/original/shanghaitech/part_A_final/test_data/images/'
+gt_path = './data/original/shanghaitech/part_A_final/test_data/ground_truth_csv/'
+model_path = './final_models/mcnn_shtechA_2000.h5'
 
 output_dir = './output/'
 model_name = os.path.basename(model_path).split('.')[0]
