@@ -46,6 +46,7 @@ class ExrImageDataLoader():
             for img_path, fname in self.data_files:
                 assert fname[0:6] in self.masks
                 img, den = self.process_img(img_path,fname)
+                if img is None: continue
                 blob = {'data': img,
                         'gt_density': den,
                         'fname': fname,
@@ -98,6 +99,9 @@ class ExrImageDataLoader():
         current_count = den.sum()
         den = den * true_count/current_count
         den = den.reshape((1, 1, den.shape[0], den.shape[1]))
+        if np.isnan(den).any():
+            print("invalid dmap: {}".format(fname))
+            return None, None
         return img, den
 
     def __iter__(self):
@@ -115,6 +119,7 @@ class ExrImageDataLoader():
             else:                    
                 img_path, fname = self.data_files[idx]
                 img, den = self.process_img(img_path,fname)
+                if img is None: continue
                 blob = {'data': img,
                         'gt_density': den,
                         'fname': fname,

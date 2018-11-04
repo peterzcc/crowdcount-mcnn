@@ -32,7 +32,8 @@ class MCNN(nn.Module):
                                      Conv2d(48, 24, 3, same_padding=True, bn=bn),
                                      Conv2d(24, 12, 3, same_padding=True, bn=bn))
         
-        self.fuse = nn.Sequential(Conv2d( 30, 1, 1, same_padding=True, bn=bn))
+        self.fuse = nn.Sequential(Conv2d( 30, 1, 1, same_padding=True, bn=bn, relu=False),
+                                  nn.LeakyReLU())
         
     def forward(self, im_data):
         x1 = self.branch1(im_data)

@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from mcnn import network
 from mcnn.models import MCNN
@@ -21,14 +22,16 @@ class CrowdCounter(nn.Module):
         else:
             mask_var = 1.0
         density_map = self.DME(im_data) * mask_var
-
+        assert not torch.isnan(density_map).any()
         if self.training:                        
             gt_data = network.np_to_variable(gt_data, is_cuda=True, is_training=self.training) * mask_var
+            if torch.isnan(gt_data).any():
+                raise ValueError("gt_data broken")
             self.loss_mse = self.build_loss(density_map, gt_data)
             
         return density_map
     
     def build_loss(self, density_map, gt_data):
-        loss = self.loss_fn(density_map, gt_data) \
-               + self.loss_fn(density_map.sum(2).sum(2), gt_data.sum(2).sum(2))
+        loss = self.loss_fn(density_map, gt_data)
+        #+ self.loss_fn(density_map.sum(2).sum(2),gt_data.sum(2).sum(2))
         return loss
