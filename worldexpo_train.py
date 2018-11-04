@@ -40,14 +40,16 @@ def main():
     data_path = args.data
     train_path = data_path+'/train_frame'
     train_gt_path = data_path+'/train_dmap'
+    train_mask_path = os.path.join(data_path,'train_roi')
     val_path = data_path+'/test_frame'
     val_gt_path = data_path+'/test_dmap'
+    val_mask_path = os.path.join(data_path, 'test_roi')
 
     #training configuration
     start_step = 0
     end_step = 3000
-    lr = 0.00001
-    momentum = 0.5
+    lr = 0.000001
+    momentum = 0.9
     disp_interval = 500
     log_interval = 250
 
@@ -98,8 +100,10 @@ def main():
     t = Timer()
     t.tic()
 
-    data_loader = ExrImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=args.preload)
-    data_loader_val = ExrImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=False)
+    data_loader = ExrImageDataLoader(train_path, train_gt_path, mask_path=train_mask_path,
+                                     shuffle=True, gt_downsample=True, pre_load=args.preload)
+    data_loader_val = ExrImageDataLoader(val_path, val_gt_path, mask_path=val_mask_path,
+                                         shuffle=False, gt_downsample=True, pre_load=False)
     best_mae = 10000000
 
     for epoch in range(start_step, end_step+1):
@@ -109,7 +113,8 @@ def main():
             step = step + 1
             im_data = blob['data']
             gt_data = blob['gt_density']
-            density_map = net(im_data, gt_data)
+            mask = blob['mask']
+            density_map = net(im_data, gt_data, mask=mask)
             loss = net.loss
             train_loss += loss.item()#.data[0]
             step_cnt += 1

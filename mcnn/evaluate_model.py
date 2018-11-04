@@ -13,7 +13,11 @@ def evaluate_model(trained_model, data_loader):
     for blob in data_loader:                        
         im_data = blob['data']
         gt_data = blob['gt_density']
-        density_map = net(im_data, gt_data)
+        if "mask" in blob:
+            mask = blob["mask"]
+        else:
+            mask = None
+        density_map = net(im_data, gt_data, mask=mask)
         density_map = density_map.data.cpu().numpy()
         gt_count = np.sum(gt_data)
         et_count = np.sum(density_map)

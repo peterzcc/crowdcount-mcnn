@@ -5,7 +5,7 @@ import random
 import pandas as pd
 from exr_utils import load_exr
 class ExrImageDataLoader():
-    def __init__(self, data_path, gt_path, shuffle=False, gt_downsample=False, pre_load=False):
+    def __init__(self, data_path, gt_path,mask_path = None, shuffle=False, gt_downsample=False, pre_load=False):
         #pre_load: if true, all training and validation images are loaded into CPU RAM for faster processing.
         #          This avoids frequent file reads. Use this only for small datasets.
         self.data_path = data_path
@@ -20,31 +20,36 @@ class ExrImageDataLoader():
         self.num_samples = len(self.data_files)
         self.blob_list = {}        
         self.id_list = list(range(0,self.num_samples))
+        self.masks = None
+        if mask_path is not None:
+            self.masks = {}
+            for msk_fname in os.listdir(mask_path):
+                if not msk_fname.endswith('.png'):
+                    print("ignoring mask: {}".format(msk_fname))
+                    continue
+                msk = (cv2.imread(os.path.join(mask_path, msk_fname),0)>0).astype(np.uint8)
+                ht, wd = msk.shape[0:2]
+                msk = self.resize_img_4(msk)
+                ht_1, wd_1 = msk.shape[0:2]
+
+                if self.gt_downsample:
+                    wd_1 = int(wd_1 / 4)
+                    ht_1 = int(ht_1 / 4)
+                    msk_small = cv2.resize(msk, (wd_1, ht_1))
+                    self.masks[msk_fname[0:6]] = msk_small
+                else:
+                    self.masks[msk_fname[0:6]] = msk
+
         if self.pre_load:
             print('Pre-loading the data. This may take a while...')
             idx = 0
             for img_path, fname in self.data_files:
-                img = cv2.imread(os.path.join(img_path, fname),0).astype(np.float32, copy=False)
-                ht, wd = img.shape[0:2]
-                img = self.resize_img_4(img)
-                ht_1, wd_1 = img.shape[0:2]
-                img = img.reshape((1,1,img.shape[0],img.shape[1]))
-                den_fname = self.get_dmap_path(fname)
-                den = load_exr(den_fname).astype(np.float32, copy=False)
-                if self.gt_downsample:
-                    wd_1 = int(wd_1/4)
-                    ht_1 = int(ht_1/4)
-                    den = cv2.resize(den,(wd_1,ht_1))                
-                    den = den * ((wd*ht)/(wd_1*ht_1))
-                else:
-                    den = cv2.resize(den,(wd_1,ht_1))
-                    den = den * ((wd*ht)/(wd_1*ht_1))
-                    
-                den = den.reshape((1,1,den.shape[0],den.shape[1]))            
-                blob = {}
-                blob['data']=img
-                blob['gt_density']=den
-                blob['fname'] = fname
+                assert fname[0:6] in self.masks
+                img, den = self.process_img(img_path,fname)
+                blob = {'data': img,
+                        'gt_density': den,
+                        'fname': fname,
+                        'mask': self.masks[fname[0:6]]}
                 self.blob_list[idx] = blob
                 idx = idx+1
                 if idx % 100 == 0:                    
@@ -77,6 +82,24 @@ class ExrImageDataLoader():
         print("missing:\n{}".format(missing_files))
         return data_files
 
+    def process_img(self,img_path, fname):
+        img = cv2.imread(os.path.join(img_path, fname), 0).astype(np.float32, copy=False)
+        ht, wd = img.shape[0:2]
+        img = self.resize_img_4(img)
+        ht_1, wd_1 = img.shape[0:2]
+        img = img.reshape((1, 1, img.shape[0], img.shape[1]))
+        den_fname = self.get_dmap_path(fname)
+        den = load_exr(den_fname).astype(np.float32, copy=False)
+        if self.gt_downsample:
+            wd_1 = int(wd_1 / 4)
+            ht_1 = int(ht_1 / 4)
+        true_count = den.sum()
+        den = cv2.resize(den, (wd_1, ht_1))
+        current_count = den.sum()
+        den = den * true_count/current_count
+        den = den.reshape((1, 1, den.shape[0], den.shape[1]))
+        return img, den
+
     def __iter__(self):
         if self.shuffle:            
             if self.pre_load:            
@@ -91,27 +114,11 @@ class ExrImageDataLoader():
                 blob['idx'] = idx
             else:                    
                 img_path, fname = self.data_files[idx]
-                img = cv2.imread(os.path.join(img_path, fname), 0).astype(np.float32, copy=False)
-                ht, wd = img.shape[0:2]
-                img = self.resize_img_4(img)
-                ht_1, wd_1 = img.shape[0:2]
-                img = img.reshape((1, 1, img.shape[0], img.shape[1]))
-                den_fname = self.get_dmap_path(fname)
-                den = load_exr(den_fname).astype(np.float32, copy=False)
-                if self.gt_downsample:
-                    wd_1 = int(wd_1/4)
-                    ht_1 = int(ht_1/4)
-                    den = cv2.resize(den,(wd_1,ht_1))                
-                    den = den * ((wd*ht)/(wd_1*ht_1))
-                else:
-                    den = cv2.resize(den,(wd_1,ht_1))
-                    den = den * ((wd*ht)/(wd_1*ht_1))
-                    
-                den = den.reshape((1,1,den.shape[0],den.shape[1]))            
-                blob = {}
-                blob['data']=img
-                blob['gt_density']=den
-                blob['fname'] = fname
+                img, den = self.process_img(img_path,fname)
+                blob = {'data': img,
+                        'gt_density': den,
+                        'fname': fname,
+                        'mask': self.masks[fname[0:6]]}
                 
             yield blob
             
