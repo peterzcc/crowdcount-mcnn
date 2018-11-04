@@ -55,7 +55,7 @@ class ExrImageDataLoader():
                 idx = idx+1
                 if idx % 100 == 0:                    
                     print('Loaded ', idx, '/', self.num_samples, 'files')
-               
+            self.id_list = list(range(0, idx))
             print('Completed Loading ', idx, 'files')
 
     def resize_img_4(self,img):
@@ -97,7 +97,7 @@ class ExrImageDataLoader():
         true_count = den.sum()
         den = cv2.resize(den, (wd_1, ht_1))
         current_count = den.sum()
-        den = den * true_count/current_count
+        den = den * true_count/current_count if current_count > 0 else den
         den = den.reshape((1, 1, den.shape[0], den.shape[1]))
         if np.isnan(den).any():
             print("invalid dmap: {}".format(fname))
