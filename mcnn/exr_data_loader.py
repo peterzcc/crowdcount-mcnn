@@ -3,7 +3,7 @@ import cv2
 import os
 import random
 import pandas as pd
-from exr_utils import load_exr
+from mcnn.exr_utils import load_exr
 class ExrImageDataLoader():
     def __init__(self, data_path, gt_path,mask_path = None, shuffle=False, gt_downsample=False, pre_load=False):
         #pre_load: if true, all training and validation images are loaded into CPU RAM for faster processing.
