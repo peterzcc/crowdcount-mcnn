@@ -13,11 +13,11 @@ torch.backends.cudnn.benchmark = False
 vis = False
 save_output = True
 
-data_path =  './data/original/shanghaitech/part_B_final/test_data/images/'
-gt_path = './data/original/shanghaitech/part_B_final/test_data/ground_truth_csv/'
-model_path = './final_models/mcnn_shtechB_110.h5'
-
-output_dir = './output/'
+data_path =  '/home/data/urop2018/zzhangcm/UCSD/testing_images'
+gt_path = '/home/data/urop2018/zzhangcm/UCSD/testing_groundtruth/'
+model_path = '/home/data/urop2018/zzhangcm/crowdcount-mcnn/saved_models/mcnn_ucsd_250.h5'
+mask_path = '/home/data/urop2018/ucsd_mask.txt'
+output_dir = '/home/data/urop2018/zzhangcm/crowdcount-mcnn/output/'
 model_name = os.path.basename(model_path).split('.')[0]
 file_results = os.path.join(output_dir,'results_' + model_name + '_.txt')
 if not os.path.exists(output_dir):
@@ -37,12 +37,13 @@ mae = 0.0
 mse = 0.0
 
 #load test data
-data_loader = ImageDataLoader(data_path, gt_path, shuffle=False, gt_downsample=True, pre_load=True)
+data_loader = ImageDataLoader(data_path, gt_path, mask_path, shuffle=False, gt_downsample=True, pre_load=True)
 
 for blob in data_loader:                        
     im_data = blob['data']
     gt_data = blob['gt_density']
-    density_map = net(im_data, gt_data)
+    mask = blob['mask']
+    density_map = net(im_data, gt_data, mask=mask)
     density_map = density_map.data.cpu().numpy()
     gt_count = np.sum(gt_data)
     et_count = np.sum(density_map)

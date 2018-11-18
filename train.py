@@ -30,13 +30,14 @@ def log_print(text, color=None, on_color=None, attrs=None):
 
 
 method = 'mcnn'
-dataset_name = 'shtechA'
+dataset_name = 'ucsd'
 output_dir = './saved_models/'
 
-train_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train'
-train_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train_den'
-val_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val'
-val_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val_den'
+train_path = './ucsd_train'
+train_gt_path = './ucsd_train_gt'
+val_path = './ucsd_val'
+val_gt_path = './ucsd_val_gt'
+mask_path = './ucsd_mask.txt'
 
 #training configuration
 start_step = 0
@@ -54,7 +55,7 @@ remove_all_log = False   # remove all historical experiments in TensorBoard
 exp_name = None # the previous experiment name in TensorBoard
 
 # ------------
-rand_seed = 64678  
+rand_seed = 64678
 if rand_seed is not None:
     np.random.seed(rand_seed)
     torch.manual_seed(rand_seed)
@@ -79,8 +80,8 @@ if use_tensorboard:
     cc = CrayonClient(hostname='127.0.0.1')
     if remove_all_log:
         cc.remove_all_experiments()
-    if exp_name is None:    
-        exp_name = save_exp_name 
+    if exp_name is None:
+        exp_name = save_exp_name
         exp = cc.create_experiment(exp_name)
     else:
         exp = cc.open_experiment(exp_name)
@@ -92,46 +93,47 @@ re_cnt = False
 t = Timer()
 t.tic()
 
-data_loader = ImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=True)
-data_loader_val = ImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=True)
-best_mae = sys.maxint
+data_loader = ImageDataLoader(train_path, train_gt_path, mask_path, shuffle=True, gt_downsample=True, pre_load=True)
+data_loader_val = ImageDataLoader(val_path, val_gt_path, mask_path, shuffle=False, gt_downsample=True, pre_load=True)
+best_mae = 1000000
 
-for epoch in range(start_step, end_step+1):    
+for epoch in range(start_step, end_step+1):
     step = -1
     train_loss = 0
-    for blob in data_loader:                
-        step = step + 1        
+    for blob in data_loader:
+        step = step + 1
         im_data = blob['data']
         gt_data = blob['gt_density']
-        density_map = net(im_data, gt_data)
+        mask = blob['mask']
+        density_map = net(im_data, gt_data, mask=mask)
         loss = net.loss
         train_loss += loss.data[0]
         step_cnt += 1
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
-        if step % disp_interval == 0:            
+
+        if step % disp_interval == 0:
             duration = t.toc(average=False)
             fps = step_cnt / duration
-            gt_count = np.sum(gt_data)    
+            gt_count = np.sum(gt_data)
             density_map = density_map.data.cpu().numpy()
             et_count = np.sum(density_map)
             utils.save_results(im_data,gt_data,density_map, output_dir)
             log_text = 'epoch: %4d, step %4d, Time: %.4fs, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch,
                 step, 1./fps, gt_count,et_count)
             log_print(log_text, color='green', attrs=['bold'])
-            re_cnt = True    
-    
-       
-        if re_cnt:                                
+            re_cnt = True
+
+
+        if re_cnt:
             t.tic()
             re_cnt = False
 
     if (epoch % 2 == 0):
         save_name = os.path.join(output_dir, '{}_{}_{}.h5'.format(method,dataset_name,epoch))
-        network.save_net(save_name, net)     
-        #calculate error on the validation dataset 
+        network.save_net(save_name, net)
+        #calculate error on the validation dataset
         mae,mse = evaluate_model(save_name, data_loader_val)
         if mae < best_mae:
             best_mae = mae
@@ -145,6 +147,3 @@ for epoch in range(start_step, end_step+1):
             exp.add_scalar_value('MAE', mae, step=epoch)
             exp.add_scalar_value('MSE', mse, step=epoch)
             exp.add_scalar_value('train_loss', train_loss/data_loader.get_num_samples(), step=epoch)
-        
-    
-
