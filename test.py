@@ -15,9 +15,9 @@ save_output = True
 
 data_path =  '/home/data/urop2018/zzhangcm/UCSD/testing_images'
 gt_path = '/home/data/urop2018/zzhangcm/UCSD/testing_groundtruth/'
-model_path = '/home/data/urop2018/zzhangcm/crowdcount-mcnn/saved_models/mcnn_ucsd_250.h5'
-mask_path = '/home/data/urop2018/ucsd_mask.txt'
-output_dir = '/home/data/urop2018/zzhangcm/crowdcount-mcnn/output/'
+model_path = './saved_models/mcnn_ucsd_152.h5'
+mask_path = './ucsd_mask.txt'
+output_dir = './output/'
 model_name = os.path.basename(model_path).split('.')[0]
 file_results = os.path.join(output_dir,'results_' + model_name + '_.txt')
 if not os.path.exists(output_dir):
