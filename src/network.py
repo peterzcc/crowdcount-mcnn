@@ -52,7 +52,8 @@ def np_to_variable(x, is_cuda=True, is_training=False, dtype=torch.FloatTensor):
     if is_training:
         v = Variable(torch.from_numpy(x).type(dtype))
     else:
-        v = Variable(torch.from_numpy(x).type(dtype), requires_grad = False, volatile = True)
+        with torch.no_grad():
+            v = Variable(torch.from_numpy(x).type(dtype), requires_grad = False)
     if is_cuda:
         v = v.cuda()
     return v
