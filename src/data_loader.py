@@ -44,7 +44,9 @@ class ImageDataLoader():
                 full_path = os.path.join(self.data_path,fname)
                 assert os.path.exists(full_path)
                 img = cv2.imread(full_path,0)
-                assert img is not None
+                if img is None:
+                    print("file: {} cannot read".format(full_path))
+                    raise ValueError
                 img = img.astype(np.float32, copy=False)
                 ht = img.shape[0]
                 wd = img.shape[1]
