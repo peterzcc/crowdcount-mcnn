@@ -27,7 +27,7 @@ class ImageDataLoader():
             print('Pre-loading the data. This may take a while...')
             idx = 0
             mask = np.loadtxt(mask_path)
-            mask = mask / 255
+            mask = mask / 255.0
             ht, wd = mask.shape
             ht_1 = (ht/4)*4
             wd_1 = (wd/4)*4
