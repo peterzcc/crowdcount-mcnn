@@ -35,7 +35,7 @@ class ImageDataLoader():
                 wd_1 = int(wd_1/4)
                 ht_1 = int(ht_1/4)
                 mask = cv2.resize(mask,(wd_1,ht_1))
-                mask = mask * ((wd*ht)/(wd_1*ht_1))
+                mask = mask
             else:
                 mask = cv2.resize(mask,(wd_1,ht_1))
                 mask = mask * ((wd*ht)/(wd_1*ht_1))
