@@ -13,8 +13,8 @@ torch.backends.cudnn.benchmark = False
 vis = False
 save_output = True
 
-data_path =  '/home/data/urop2018/zzhangcm/UCSD/testing_images'
-gt_path = '/home/data/urop2018/zzhangcm/UCSD/testing_groundtruth/'
+data_path =  './testing_images'
+gt_path = './testing_groundtruth/'
 model_path = './saved_models/mcnn_ucsd_152.h5'
 mask_path = './ucsd_mask.txt'
 output_dir = './output/'
