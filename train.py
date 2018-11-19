@@ -125,7 +125,6 @@ for epoch in range(start_step, end_step+1):
             log_print(log_text, color='green', attrs=['bold'])
             re_cnt = True
 
-
         if re_cnt:
             t.tic()
             re_cnt = False
