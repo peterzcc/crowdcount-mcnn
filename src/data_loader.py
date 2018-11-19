@@ -41,8 +41,10 @@ class ImageDataLoader():
                 mask = mask * ((wd*ht)/(wd_1*ht_1))
             self.mask = mask
             for fname in self.data_files:
-
-                img = cv2.imread(os.path.join(self.data_path,fname),0)
+                full_path = os.path.join(self.data_path,fname)
+                assert os.path.exists(full_path)
+                img = cv2.imread(full_path,0)
+                assert img is not None
                 img = img.astype(np.float32, copy=False)
                 ht = img.shape[0]
                 wd = img.shape[1]

@@ -15,7 +15,7 @@ class CrowdCounter(nn.Module):
     
     def forward(self,  im_data, gt_data=None, mask=None):
         im_data = network.np_to_variable(im_data, is_cuda=True, is_training=self.training)
-        assert mask is not None:
+        assert mask is not None
         mask_var = network.np_to_variable(mask, is_cuda=True, is_training=self.training)
         # else:
         #     mask_var = 1.0
