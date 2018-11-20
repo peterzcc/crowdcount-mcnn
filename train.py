@@ -33,10 +33,14 @@ method = 'mcnn'
 dataset_name = 'ucsd'
 output_dir = './saved_models/'
 
-train_path = './ucsd_train'
-train_gt_path = './ucsd_train_gt'
-val_path = './ucsd_val'
-val_gt_path = './ucsd_val_gt'
+# train_path = './ucsd_train'
+# train_gt_path = './ucsd_train_gt'
+# val_path = './ucsd_val'
+# val_gt_path = './ucsd_val_gt'
+train_path = './ucsd_full'
+train_gt_path = './ucsd_full_gt'
+val_path = './testing_images'
+val_gt_path = './testing_groundtruth'
 mask_path = './ucsd_mask.txt'
 
 #training configuration
