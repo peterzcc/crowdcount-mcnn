@@ -113,7 +113,7 @@ class ExrImageDataLoader():
             den_fname = self.get_dmap_path(fname)
             den = load_exr(den_fname).astype(np.float32, copy=False)
         else:
-            den = np.zeros(img.shape, dtype=np.float32)
+            den = np.zeros((img.shape[-2],img.shape[-1]), dtype=np.float32)
         if self.gt_downsample:
             wd_1 = int(wd_1 / 4)
             ht_1 = int(ht_1 / 4)
