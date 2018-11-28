@@ -37,7 +37,7 @@ class ExrImageDataLoader():
             print('Pre-loading the data. This may take a while...')
             idx = 0
             for img_path, fname in self.data_files:
-                assert fname[0:6] in self.masks
+                #assert fname[0:6] in self.masks
                 img, den = self.process_img(img_path,fname)
                 if img is None: continue
                 blob = self.build_blob(img,den,fname)
