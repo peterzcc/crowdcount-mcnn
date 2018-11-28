@@ -69,7 +69,7 @@ class ExrImageDataLoader():
         dmap_fname = os.path.splitext(img_fname)[0]+".exr"
         return os.path.join(self.gt_path, dmap_fname)
 
-    def get_data_path_files(self, data_dir, ):
+    def get_data_path_files(self, data_dir, fmt=None):
         data_files = []
         missing_files = []
         for path, subdirs, files in os.walk(data_dir):
