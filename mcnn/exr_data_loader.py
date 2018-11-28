@@ -5,13 +5,15 @@ import random
 import pandas as pd
 from mcnn.exr_utils import load_exr
 class ExrImageDataLoader():
-    def __init__(self, data_path, gt_path,mask_path = None, shuffle=False, gt_downsample=False, pre_load=False):
+    def __init__(self, data_path, gt_path,mask_path = None, shuffle=False, gt_downsample=False, pre_load=False,
+                 resize_w=720):
         #pre_load: if true, all training and validation images are loaded into CPU RAM for faster processing.
         #          This avoids frequent file reads. Use this only for small datasets.
         self.data_path = data_path
         self.gt_path = gt_path
         self.gt_downsample = gt_downsample
         self.pre_load = pre_load
+        self.resize_w = resize_w
         self.data_files = self.get_data_path_files(data_path, fmt=".jpg")
         self.data_files.sort(key=lambda x: x[1])
         self.shuffle = shuffle
@@ -38,7 +40,7 @@ class ExrImageDataLoader():
             idx = 0
             for img_path, fname in self.data_files:
                 #assert fname[0:6] in self.masks
-                img, den = self.process_img(img_path,fname)
+                img, den = self.process_img(img_path,fname,resize_w=resize_w)
                 if img is None: continue
                 blob = self.build_blob(img,den,fname)
                 self.blob_list[idx] = blob
@@ -103,8 +105,10 @@ class ExrImageDataLoader():
         print("missing:\n{}".format(missing_files))
         return data_files
 
-    def process_img(self,img_path, fname):
+    def process_img(self,img_path, fname, resize_w=None):
         img = cv2.imread(os.path.join(img_path, fname), 0).astype(np.float32, copy=False)
+        if resize_w is not None:
+            img = cv2.resize(img,(resize_w,int(img.shape[1]* (resize_w/img.shape[0]))))
         ht, wd = img.shape[0:2]
         img = self.resize_img_4(img)
         ht_1, wd_1 = img.shape[0:2]
@@ -141,7 +145,7 @@ class ExrImageDataLoader():
                 blob['idx'] = idx
             else:                    
                 img_path, fname = self.data_files[idx]
-                img, den = self.process_img(img_path,fname)
+                img, den = self.process_img(img_path,fname,resize_w=self.resize_w)
                 if img is None: continue
                 blob = self.build_blob(img, den, fname)
                 
