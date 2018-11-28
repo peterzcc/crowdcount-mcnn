@@ -53,7 +53,7 @@ class ExrImageDataLoader():
             mask = self.masks[fname[0:6]]
         elif None in self.masks:
             if self.default_mask is None:
-                msk = np.ones(img.shape,dtype=np.uint8)
+                msk = np.ones(img.shape[-2:],dtype=np.uint8)
                 self.default_mask = self.process_msk(msk)
             mask = self.default_mask
         else:
