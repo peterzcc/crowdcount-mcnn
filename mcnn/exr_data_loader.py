@@ -21,6 +21,7 @@ class ExrImageDataLoader():
         self.blob_list = {}        
         self.id_list = list(range(0,self.num_samples))
         self.masks = None
+        self.default_mask = None
         if mask_path is not None:
             self.masks = {}
             for msk_fname in os.listdir(mask_path):
@@ -28,17 +29,9 @@ class ExrImageDataLoader():
                     print("ignoring mask: {}".format(msk_fname))
                     continue
                 msk = (cv2.imread(os.path.join(mask_path, msk_fname),0)>0).astype(np.uint8)
-                ht, wd = msk.shape[0:2]
-                msk = self.resize_img_4(msk)
-                ht_1, wd_1 = msk.shape[0:2]
-
-                if self.gt_downsample:
-                    wd_1 = int(wd_1 / 4)
-                    ht_1 = int(ht_1 / 4)
-                    msk_small = cv2.resize(msk, (wd_1, ht_1))
-                    self.masks[msk_fname[0:6]] = msk_small
-                else:
-                    self.masks[msk_fname[0:6]] = msk
+                self.masks[msk_fname[0:6]] = self.process_msk(msk)
+        elif mask_path == -1:
+            self.masks = {None: None}
 
         if self.pre_load:
             print('Pre-loading the data. This may take a while...')
@@ -47,16 +40,42 @@ class ExrImageDataLoader():
                 assert fname[0:6] in self.masks
                 img, den = self.process_img(img_path,fname)
                 if img is None: continue
-                blob = {'data': img,
-                        'gt_density': den,
-                        'fname': fname,
-                        'mask': self.masks[fname[0:6]]}
+                blob = self.build_blob(img,den,fname)
                 self.blob_list[idx] = blob
                 idx = idx+1
                 if idx % 100 == 0:                    
                     print('Loaded ', idx, '/', self.num_samples, 'files')
             self.id_list = list(range(0, idx))
             print('Completed Loading ', idx, 'files')
+
+    def build_blob(self,img,den,fname):
+        if fname[0:6] in self.masks:
+            mask = self.masks[fname[0:6]]
+        elif None in self.masks:
+            if self.default_mask is None:
+                msk = np.ones(img.shape,dtype=np.uint8)
+                self.default_mask = self.process_msk(msk)
+            mask = self.default_mask
+        else:
+            mask = None
+        blob = {'data': img,
+                'gt_density': den,
+                'fname': fname,
+                'mask': mask}
+        return blob
+
+    def process_msk(self,msk):
+        ht, wd = msk.shape[0:2]
+        msk = self.resize_img_4(msk)
+        ht_1, wd_1 = msk.shape[0:2]
+
+        if self.gt_downsample:
+            wd_1 = int(wd_1 / 4)
+            ht_1 = int(ht_1 / 4)
+            msk_small = cv2.resize(msk, (wd_1, ht_1))
+            return msk_small
+        else:
+            return msk
 
     def resize_img_4(self,img):
         ht = img.shape[0]
@@ -124,10 +143,7 @@ class ExrImageDataLoader():
                 img_path, fname = self.data_files[idx]
                 img, den = self.process_img(img_path,fname)
                 if img is None: continue
-                blob = {'data': img,
-                        'gt_density': den,
-                        'fname': fname,
-                        'mask': self.masks[fname[0:6]]}
+                blob = self.build_blob(img, den, fname)
                 
             yield blob
             

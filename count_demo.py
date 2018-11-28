@@ -53,7 +53,7 @@ def main():
     mse = 0.0
 
     #load test data
-    data_loader = ExrImageDataLoader(data_path, None, mask_path=None,
+    data_loader = ExrImageDataLoader(data_path, None, mask_path=-1,
                                      shuffle=False, gt_downsample=True, pre_load=args.preload)
 
     for blob in data_loader:
