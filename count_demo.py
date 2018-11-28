@@ -9,8 +9,8 @@ from mcnn import utils
 import argparse
 
 
-torch.backends.cudnn.enabled = True
-torch.backends.cudnn.benchmark = False
+# torch.backends.cudnn.enabled = True
+# torch.backends.cudnn.benchmark = False
 
 def main():
     parser = argparse.ArgumentParser(description='mcnn worldexp.')
@@ -46,6 +46,7 @@ def main():
 
     trained_model = os.path.join(model_path)
     network.load_net(trained_model, net)
+    print("loaded: {}"format(trained_model))
     net.cuda()
     net.eval()
     mae = 0.0
