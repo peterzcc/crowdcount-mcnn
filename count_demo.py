@@ -75,9 +75,9 @@ def main():
     mse = np.sqrt(mse/data_loader.get_num_samples())
     print('\nMAE: %0.2f, MSE: %0.2f' % (mae,mse))
 
-    f = open(file_results, 'w')
-    f.write('MAE: %0.2f, MSE: %0.2f' % (mae,mse))
-    f.close()
+    # f = open(file_results, 'w')
+    # f.write('MAE: %0.2f, MSE: %0.2f' % (mae,mse))
+    # f.close()
 
 
 if __name__ == "__main__":
