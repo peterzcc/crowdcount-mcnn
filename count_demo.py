@@ -17,7 +17,8 @@ save_output = True
 def main():
     parser = argparse.ArgumentParser(description='mcnn worldexp.')
     parser.add_argument('--preload', type=int, default=0)
-    parser.add_argument('--data', type=str, default="/mnt/m2/mzcc/crowd_data/worldexpo", help='train, test, etc')
+    parser.add_argument('--data', type=str, default="/mnt/m2/mzcc/crowd_data/worldexpo", help='data path')
+    parser.add_argument('--model', type=str, default="'./saved_models/mcnn_worldexpo_2000.h5'", help='model path')
     args = parser.parse_args()
     method = 'mcnn'
     dataset_name = 'minibus'
@@ -26,7 +27,7 @@ def main():
     data_path = args.data
 
     gt_path = None
-    model_path = './saved_models/mcnn_worldexpo_2000.h5'
+    model_path = args.model
 
     output_dir = './output/'
     model_name = os.path.basename(model_path).split('.')[0]

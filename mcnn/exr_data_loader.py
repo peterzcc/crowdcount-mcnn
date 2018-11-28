@@ -69,14 +69,15 @@ class ExrImageDataLoader():
         dmap_fname = os.path.splitext(img_fname)[0]+".exr"
         return os.path.join(self.gt_path, dmap_fname)
 
-    def get_data_path_files(self, data_dir, fmt=".jpg"):
+    def get_data_path_files(self, data_dir, ):
         data_files = []
         missing_files = []
         for path, subdirs, files in os.walk(data_dir):
             for fname in files:
                 if os.path.isfile(os.path.join(path,fname)) \
-                        and fname.endswith(fmt) \
-                        and os.path.isfile(self.get_dmap_path(fname)):
+                        and not fname.startswith(".") \
+                        and not fname.endswith(".mat") \
+                        and (self.gt_path is None or os.path.isfile(self.get_dmap_path(fname))) :
                     data_files.append((path,fname))
                 else:
                     missing_files.append(fname)
