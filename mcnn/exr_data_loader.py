@@ -108,7 +108,7 @@ class ExrImageDataLoader():
     def process_img(self,img_path, fname, resize_w=None):
         img = cv2.imread(os.path.join(img_path, fname), 0).astype(np.float32, copy=False)
         if resize_w is not None:
-            img = cv2.resize(img,(resize_w,int(img.shape[1]* (resize_w/img.shape[0]))))
+            img = cv2.resize(img,(resize_w,int(img.shape[0]* (resize_w/img.shape[1]))))
         ht, wd = img.shape[0:2]
         img = self.resize_img_4(img)
         ht_1, wd_1 = img.shape[0:2]
