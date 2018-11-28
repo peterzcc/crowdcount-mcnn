@@ -22,7 +22,9 @@ class ExrImageDataLoader():
         self.id_list = list(range(0,self.num_samples))
         self.masks = None
         self.default_mask = None
-        if mask_path is not None:
+        if mask_path == -1:
+            self.masks = {None: None}
+        elif mask_path is not None:
             self.masks = {}
             for msk_fname in os.listdir(mask_path):
                 if not msk_fname.endswith('.png'):
@@ -30,8 +32,6 @@ class ExrImageDataLoader():
                     continue
                 msk = (cv2.imread(os.path.join(mask_path, msk_fname),0)>0).astype(np.uint8)
                 self.masks[msk_fname[0:6]] = self.process_msk(msk)
-        elif mask_path == -1:
-            self.masks = {None: None}
 
         if self.pre_load:
             print('Pre-loading the data. This may take a while...')
