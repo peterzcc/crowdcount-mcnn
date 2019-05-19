@@ -15,9 +15,9 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description='mcnn worldexp.')
     parser.add_argument('--preload', type=int, default=0)
-    parser.add_argument('--data', type=str, default="/mnt/m2/mzcc/crowd_data/worldexpo", help='data path')
+    parser.add_argument('--data', type=str, default="./minibus_data", help='data path')
     parser.add_argument('--model', type=str, default="./saved_models/mcnn_worldexpo_2000.h5", help='model path')
-    parser.add_argument('--saveden', type=int, default=0)
+    parser.add_argument('--saveden', type=int, default=1)
     parser.add_argument('--vis', type=int, default=0)
 
     args = parser.parse_args()
